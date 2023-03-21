@@ -1,10 +1,7 @@
 package fr.universecorp.onlinepaint.ui;
 
 import fr.universecorp.onlinepaint.network.Client;
-import fr.universecorp.onlinepaint.ui.utils.SCircle;
-import fr.universecorp.onlinepaint.ui.utils.SRectangle;
-import fr.universecorp.onlinepaint.ui.utils.Straight;
-import fr.universecorp.onlinepaint.ui.utils.TextPoint;
+import fr.universecorp.onlinepaint.ui.utils.*;
 
 import javax.swing.*;
 import java.awt.*;
@@ -16,6 +13,7 @@ public class PanelManager extends JFrame {
     private ColorChooserPanel panelCouleur;
     private ShapesPanel panelFormes;
     private final Client client;
+
 
     public PanelManager(Client client) {
         this.client = client;
@@ -50,10 +48,8 @@ public class PanelManager extends JFrame {
     public boolean isShapeFilled() { return this.panelFormes.isFilled(); }
     public void removeLast() { this.panelDessin.removeLast(); }
 
-    public void majIHM() {
-        ArrayList<Object> lst = this.panelDessin.getLst();
-        ArrayList<String> alData = this.getData(lst);
-        this.client.setData(alData);
+    public void majIHM(String action) {
+        this.client.action(action);
     }
 
     public ArrayList<String> getData(ArrayList<Object> lst) {
@@ -63,27 +59,89 @@ public class PanelManager extends JFrame {
             if(shape instanceof SCircle circle) {
                 alRet.add("circle," + circle.getPoint1().x + "," + circle.getPoint1().y + "," +
                                       circle.getPoint2().x + "," + circle.getPoint2().y + "," + circle.getRadius() + "," +
-                                      circle.isFilled()    + "," + circle.getPoint1().getColor());
+                                      circle.isFilled()    + "," + this.getColorEq(circle.getPoint1().getColor()));
             }
 
             if(shape instanceof TextPoint text) {
                 alRet.add("text," + text.getPoint().x + "," + text.getPoint().y + "," +
-                                    text.getText()    + "," + text.getPoint().getColor());
+                                    text.getText()    + "," + this.getColorEq(text.getPoint().getColor()));
             }
 
             if(shape instanceof Straight line) {
                 alRet.add("line," + line.getPoint1().x + "," + line.getPoint1().y + "," +
                                     line.getPoint2().x + "," + line.getPoint2().y + "," +
-                                    line.getPoint1().getColor());
+                                    this.getColorEq(line.getPoint1().getColor()));
             }
 
             if(shape instanceof SRectangle rec) {
                 alRet.add("rectangle," + rec.getPoint1().x + "," + rec.getPoint1().y + "," +
                                          rec.getPoint2().x + "," + rec.getPoint2().y + "," +
-                                         rec.isFilled()    + "," + rec.getPoint1().getColor());
+                                         rec.isFilled()    + "," + this.getColorEq(rec.getPoint1().getColor()));
             }
         }
 
         return alRet;
+    }
+
+    public void setData(String data) {
+
+        Object objet = null;
+
+        String[] donnees = data.split(",");
+        if(donnees[1].equals("add")) {
+            switch (donnees[2]) {
+                case "circle" -> {
+                    SCircle circle = new SCircle(
+                            new SPoint(new Point(Integer.parseInt(donnees[2]), Integer.parseInt(donnees[3])), 0),
+                            new SPoint(new Point(Integer.parseInt(donnees[4]), Integer.parseInt(donnees[5])), 0),
+                            Boolean.parseBoolean(donnees[7]));
+
+                    circle.getPoint1().draw(this.getColorFromString(donnees[8]));
+                }
+
+                case "text" -> {
+
+                }
+
+                case "line" -> {
+
+                }
+
+                case "rectangle" -> {
+
+                }
+
+                default ->  { }
+            }
+        }
+
+
+        this.panelDessin.addItem(objet);
+    }
+
+    public Color getColorFromString(String color) {
+
+        return switch (color) {
+            case "red"    -> Color.RED;
+            case "blue"   -> Color.BLUE;
+            case "yellow" -> Color.YELLOW;
+            case "green"  -> Color.GREEN;
+            case "black"  -> Color.BLACK;
+            case "white"  -> Color.WHITE;
+
+            default -> Color.RED;
+        };
+    }
+
+    public String getColorEq(Color color) {
+
+        if(color.equals(Color.RED)) { return "red"; }
+        if(color.equals(Color.BLUE)) { return "blue"; }
+        if(color.equals(Color.YELLOW)) { return "yellow"; }
+        if(color.equals(Color.GREEN)) { return "green"; }
+        if(color.equals(Color.BLACK)) { return "black"; }
+        if(color.equals(Color.WHITE)) { return "white"; }
+
+        return "";
     }
 }

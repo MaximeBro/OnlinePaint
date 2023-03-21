@@ -15,7 +15,7 @@ public class DrawPanel extends JPanel implements IDrawable {
     private SPoint currentPoint = null;
     private SPoint basePoint = null;
     private String lastShape = "circle";
-    private boolean fill = false;
+    private String lastAction = "";
 
     public DrawPanel(PanelManager manager) {
         this.manager = manager;
@@ -119,7 +119,7 @@ public class DrawPanel extends JPanel implements IDrawable {
             }
         }
 
-        this.manager.majIHM();
+        this.manager.majIHM(this.lastAction);
     }
 
 
@@ -131,9 +131,6 @@ public class DrawPanel extends JPanel implements IDrawable {
     @Override
     public void mousePressed(MouseEvent e) {
         this.pressed = true;
-
-        if(this.manager.getSelectedShape().equals("fill")) { this.fill = true; }
-        if(this.manager.getSelectedShape().equals("empty")) { this.fill = false; }
 
         switch (this.manager.getSelectedShape()) {
             case "eraser" -> { // La gomme supprime absolument tout !
@@ -172,12 +169,17 @@ public class DrawPanel extends JPanel implements IDrawable {
 
             case "text" -> {
                 this.lastShape = "text";
-                String text = JOptionPane.showInputDialog(new TextPane(), "Saisissez votre texte");
+                String text = JOptionPane.showInputDialog("Saisissez votre texte");
                 SPoint point = new SPoint(e.getPoint(), 0);
                 point.draw(this.manager.getColor());
 
-                if(text != null)
-                    this.alShapes.add(new TextPoint(point, text));
+                if(text != null && !text.equals("")) {
+                    TextPoint texte = new TextPoint(point, text);
+                    this.alShapes.add(texte);
+                    this.lastAction+=("add,text," + texte.getPoint().x + "," + texte.getPoint().y + "," +
+                            texte.getText()    + "," + texte.getPoint().getColor());
+                }
+
 
                 this.repaint();
             }
@@ -214,10 +216,20 @@ public class DrawPanel extends JPanel implements IDrawable {
                 case "rectangle" -> {
                     this.currentPoint = new SPoint(e.getPoint(), 2);
                     this.currentPoint.draw(this.manager.getColor());
-                    if(this.manager.isShapeFilled())
-                        this.alShapes.add(new SRectangle(this.basePoint, this.currentPoint, true));
-                    else
-                        this.alShapes.add(new SRectangle(this.basePoint, this.currentPoint, false));
+                    if(this.manager.isShapeFilled()) {
+                        SRectangle rec = new SRectangle(this.basePoint, this.currentPoint, true);
+                        this.alShapes.add(rec);
+                        this.lastAction=("add,rectangle," + rec.getPoint1().x + "," + rec.getPoint1().y + "," +
+                                rec.getPoint2().x + "," + rec.getPoint2().y + "," +
+                                rec.isFilled()    + "," + rec.getPoint1().getColor());
+                    }
+                    else {
+                        SRectangle rec = new SRectangle(this.basePoint, this.currentPoint, false);
+                        this.alShapes.add(rec);
+                        this.lastAction=("add,rectangle," + rec.getPoint1().x + "," + rec.getPoint1().y + "," +
+                                rec.getPoint2().x + "," + rec.getPoint2().y + "," +
+                                rec.isFilled()    + "," + rec.getPoint1().getColor());
+                    }
 
                     this.basePoint = null;
                     this.currentPoint = null;
@@ -228,7 +240,13 @@ public class DrawPanel extends JPanel implements IDrawable {
                 case "line" -> {
                     this.currentPoint = new SPoint(e.getPoint(), 2);
                     this.currentPoint.draw(this.manager.getColor());
-                    this.alShapes.add(new Straight(this.basePoint, this.currentPoint));
+
+                    Straight line = new Straight(this.basePoint, this.currentPoint);
+                    this.alShapes.add(line);
+
+                    this.lastAction=("line," + line.getPoint1().x + "," + line.getPoint1().y + "," +
+                            line.getPoint2().x + "," + line.getPoint2().y + "," +
+                            line.getPoint1().getColor());
 
                     this.basePoint = null;
                     this.currentPoint = null;
@@ -240,7 +258,12 @@ public class DrawPanel extends JPanel implements IDrawable {
                     this.currentPoint = new SPoint(e.getPoint(), 2);
                     this.currentPoint.draw(this.manager.getColor());
 
-                    this.alShapes.add(new SCircle(this.basePoint, this.currentPoint, this.manager.isShapeFilled()));
+                    SCircle circle = new SCircle(this.basePoint, this.currentPoint, this.manager.isShapeFilled());
+                    this.alShapes.add(circle);
+
+                    this.lastAction=("add,circle," + circle.getPoint1().x + "," + circle.getPoint1().y + "," +
+                            circle.getPoint2().x + "," + circle.getPoint2().y + "," + circle.getRadius() + "," +
+                            circle.isFilled()    + "," + circle.getPoint1().getColor());
 
                     this.basePoint = null;
                     this.currentPoint = null;
@@ -259,19 +282,37 @@ public class DrawPanel extends JPanel implements IDrawable {
 
     public void removeLast() {
         int size = this.alShapes.size();
-        if(size > 0) { this.alShapes.remove(size-1); }
+        if(size > 0) {
+            Object objet = this.alShapes.remove(size-1);
+            this.lastAction = "remove,";
+
+            if(objet instanceof SCircle circle) {
+                this.lastAction+=("circle," + circle.getPoint1().x + "," + circle.getPoint1().y + "," +
+                        circle.getPoint2().x + "," + circle.getPoint2().y + "," + circle.getRadius() + "," +
+                        circle.isFilled()    + "," + circle.getPoint1().getColor());
+            }
+
+            if(objet instanceof TextPoint text) {
+                this.lastAction+=("text," + text.getPoint().x + "," + text.getPoint().y + "," +
+                        text.getText()    + "," + text.getPoint().getColor());
+            }
+
+            if(objet instanceof Straight line) {
+                this.lastAction+=("line," + line.getPoint1().x + "," + line.getPoint1().y + "," +
+                        line.getPoint2().x + "," + line.getPoint2().y + "," +
+                        line.getPoint1().getColor());
+            }
+
+            if(objet instanceof SRectangle rec) {
+                this.lastAction+=("rectangle," + rec.getPoint1().x + "," + rec.getPoint1().y + "," +
+                        rec.getPoint2().x + "," + rec.getPoint2().y + "," +
+                        rec.isFilled()    + "," + rec.getPoint1().getColor());
+            }
+        }
+
         this.repaint();
     }
 
     public ArrayList<Object> getLst() { return this.alShapes; }
-
-    private class TextPane extends JPanel {
-        private JTextField txtField;
-
-        public TextPane() {
-            this.txtField = new JTextField(10);
-        }
-
-        public String getText() { return this.txtField.getText(); }
-    }
+    public void addItem(Object objet) { if(objet != null) this.alShapes.add(objet); }
 }
